@@ -10,7 +10,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
 <script charset="utf-8" type="text/javascript">
         document.addEventListener('DOMContentLoaded', (event) => {
-            var socket = io.connect('http://' + document.domain + ':' + location.port);
+            var socket = io.connect('https://hunters-one.vercel.app');
             socket.on('connect', function() {
                 socket.emit('join', {username: '{{ username }}'});
             });
