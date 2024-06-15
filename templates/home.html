@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+        <meta charset="UTF-8">
+
+    
+        <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='styles.css') }}"
+    />
+    <meta charset="UTF-8">
+    <link rel="stylesheet" 
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script type="text/javascript" charset="utf-8">
+        document.addEventListener('DOMContentLoaded', (event) => {
+            var socket = io.connect('http://' + document.domain + ':' + location.port);
+            socket.on('connect', function() {
+                socket.emit('join', {username: '{{ username }}'});
+            });
+            socket.on('message', function(msg) {
+                var chatbox = document.querySelector('.chatbox');
+                if (typeof msg === 'string') {
+                    chatbox.innerHTML += '<div>' + msg + '</div>';
+                } else {
+                    chatbox.innerHTML += '<div style="display:flex; flex:1;"><span style="color:' + msg.color + '">[' + msg.username + ']</span>: ' + msg.message + '</div>';
+                }
+            });
+            document.querySelector('.send').onclick = function() {
+                sendMessage();
+            };
+
+            // Send message when Enter key is pressed
+            document.querySelector('.userinput').addEventListener('keydown', function(event) {
+                if (event.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+
+            function sendMessage() {
+                var message = document.querySelector('.userinput').value;
+                if (message.trim() !== '') {
+                    socket.emit('message', {username: '{{ username }}', message: message});
+                    document.querySelector('.userinput').value = '';
+                }
+            }
+
+            // Toggle chat visibility
+            document.querySelector('.opchat').onclick = function() {
+                var chatDiv = document.querySelector('.chatdiv');
+                if (chatDiv.classList.contains('visible')) {
+                    chatDiv.classList.remove('visible');
+                } else {
+                    chatDiv.classList.add('visible');
+                }
+            };
+            document.querySelector('.close').onclick = function() {
+                var chatDiv = document.querySelector('.chatdiv');
+                if (chatDiv.classList.contains('visible')) {
+                    chatDiv.classList.remove('visible');
+                } else {
+                    chatDiv.classList.add('visible');
+                }
+            };
+
+            // Emit 'leave' event when the user navigates away from the page
+            window.addEventListener('beforeunload', function() {
+                socket.emit('leave', {username: '{{ username }}'});
+            });
+        });
+    </script>
+
+</head>
+<body>
+    <header >
+        <ul>
+        
+        <li style="color: #a1a1a1;"><a href="{{ url_for('index') }}">News</a></li>
+        <li><a href="{{ url_for('addbounty') }}">Submit</a> </li>
+        <li style="color: #a1a1a1;"><a href="{{ url_for('bountylist') }}">Bounty List</a> </li>
+    </ul>    <div class="notif"><i class="fa-solid fa-bell" style="color: #a1a1a1;"></i></div><div class="logout"><a href="{{ url_for('logout') }}"><i class="fa-solid fa-right-from-bracket" style="color: #a1a1a1;"></i></i></a></div>
+    
+    </header>
+    <div class="container">
+
+        <div class="main">
+
+          <form class="subform" action="/submitimg" method="POST" enctype="multipart/form-data">
+            <h1>Product Form</h1>
+
+            <label for="images" class="drop-container" id="dropcontainer">
+              <span class="drop-title">Drop files here</span>
+              or
+              <input style="border: none; box-shadow: none;" name="image"type="file" id="image" accept="image/*" required>
+            </label>
+            <input type="text" name="name" placeholder="Product Name">
+            <input type="number" name="price" placeholder="Product Price">
+            <input type="number" name="stars" placeholder="Rating (1-5)" min="1" max="5">
+
+            <input class="submit" type="submit" value="Submit">
+          </form>
+        </div>
+
+        <div class="chatdiv">
+            <div class="close"><i class="fa-solid fa-xmark"></i></div>
+            <div class="chathead">Chat</div>
+            <div class="chatbox"></div>
+            <div class="chatinput"><input class="userinput" type="text" placeholder="Type here"><button class="send" type="submit" ><svg fill="#a1a1a1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" style="transform: msfilter" > <path d="m21.426 11.095-17-8A1 1 0 0 0 3.03 4.242l1.212 4.849L12 12l-7.758 2.909-1.212 4.849a.998.998 0 0 0 1.396 1.147l17-8a1 1 0 0 0 0-1.81z" ></path> </svg></button></div>
+        </div>
+        <div class="opchat"><i class="fa-regular fa-comments" style="color: #a1a1a1;"></i></div>
+    </div>
+    
+</body>
+</html>
+<body>
+
