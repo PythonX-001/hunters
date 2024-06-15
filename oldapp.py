@@ -1,17 +1,17 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from flask_socketio import SocketIO, join_room, leave_room, send
+from flask_sqlalchemy import SQLAlchemy
+from functools import wraps
 import os
-import json
 import html
 import bs4
 from werkzeug.utils import secure_filename
-from functools import wraps
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
-# Example with 'threading' async mode
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
-
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///chat.db'
+db = SQLAlchemy(app)
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 UPLOAD_FOLDER = 'static/uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
@@ -19,30 +19,9 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
-# Path to the JSON file
-USER_FILE = 'users.json'
-
-# Initialize JSON file if it doesn't exist
-if not os.path.exists(USER_FILE):
-    with open(USER_FILE, 'w') as f:
-        json.dump([], f)
-
-def read_users():
-    with open(USER_FILE, 'r') as f:
-        return json.load(f)
-
-def write_users(users):
-    with open(USER_FILE, 'w') as f:
-        json.dump(users, f)
-
-def user_exists(username):
-    users = read_users()
-    return any(user['username'] == username for user in users)
-
-def add_user(username):
-    users = read_users()
-    users.append({'username': username})
-    write_users(users)
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
 
 def login_required(f):
     @wraps(f)
@@ -71,8 +50,11 @@ def addbounty():
 @app.route('/login', methods=['POST'])
 def login_user():
     username = request.form['username']
-    if not user_exists(username):
-        add_user(username)
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        user = User(username=username)
+        db.session.add(user)
+        db.session.commit()
     session['username'] = username
     return redirect(url_for('index'))
 
@@ -166,4 +148,6 @@ def submit():
         return redirect(url_for('addbounty'))
 
 if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
     socketio.run(app, debug=True)
